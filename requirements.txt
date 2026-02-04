@@ -1,0 +1,9 @@
+streamlit
+pymupdf
+python-docx
+python-pptx
+sentence-transformers
+numpy
+requests
+reportlab
+plotly
