@@ -1,0 +1,35 @@
+body {
+    background: linear-gradient(135deg, #dfe9ff, #f9d7ff);
+}
+
+.header {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.header h1 {
+    font-size: 42px;
+    font-weight: 900;
+    color: #333;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #555;
+    margin-top: -10px;
+}
+
+.section-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-top: 40px;
+    color: #333;
+}
+
+.card {
+    background: rgba(255,255,255,0.8);
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 14px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+}
