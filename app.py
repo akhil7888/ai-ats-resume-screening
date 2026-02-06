@@ -1,11 +1,15 @@
-# import streamlit as st
+import streamlit as st
+from config import APP_TITLE
 from ui import (
     render_header,
-    render_upload_section,
-    render_ats_dashboard,
-    render_chat_section,
-    render_jd_generator,
-    render_recruiter_mode
+    render_resume_upload,
+    render_job_description_box,
+    render_analyze_button,
+    render_ats_overview,
+    render_skill_gaps,
+    render_resume_analysis,
+    render_improved_resume,
+    render_chat_interface
 )
 from utils import (
     extract_text,
@@ -53,3 +57,4 @@ elif menu == "Recruiter Mode":
 
 elif menu == "Chat with Resume":
     render_chat_section()
+
