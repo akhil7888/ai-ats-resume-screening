@@ -2,23 +2,30 @@ import streamlit as st
 from groq import Groq
 from docx import Document
 from io import BytesIO
-import fitz  # PyMuPDF for PDF
+import fitz   # PyMuPDF for PDF extraction
 
-# Initialize Groq client
+# -----------------------------
+# INIT GROQ CLIENT
+# -----------------------------
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+# SAFE & SUPPORTED MODEL (2026)
+MODEL = "llama3.1-8b-instruct"
+
+
 # -----------------------------
-# GENERIC GROQ LLM CALL
+# GENERIC LLM FUNCTION
 # -----------------------------
-def groq_llm(prompt, max_tokens=500):
+def groq_llm(prompt, max_tokens=800):
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",     # ✅ Stable model, safer than 70B
+            model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-            temperature=0.0            # deterministic output
+            temperature=0,
+            max_tokens=max_tokens
         )
         return response.choices[0].message.content
+
     except Exception as e:
         return f"[Groq API Error] {str(e)}"
 
@@ -36,25 +43,20 @@ def extract_text(file):
 
     elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         doc = Document(file)
-        text = "\n".join([p.text for p in doc.paragraphs])
-        return text
+        return "\n".join([p.text for p in doc.paragraphs])
 
     return ""
 
 
 # -----------------------------
-# ATS SCORE
+# ATS SCORE (Stable JSON)
 # -----------------------------
 def ats_scores(resume, jd):
     prompt = f"""
-    Compare the resume to the job description and give numeric scores only.
-    Return strictly JSON:
+    Compare the resume to the job description.
 
-    {{
-        "match": 0-100,
-        "fit": 0-100,
-        "quality": 0-100
-    }}
+    Return ONLY a JSON dict like:
+    {{"match": 0-100, "fit": 0-100, "quality": 0-100}}
 
     Resume:
     {resume}
@@ -63,7 +65,7 @@ def ats_scores(resume, jd):
     {jd}
     """
 
-    result = groq_llm(prompt)
+    result = groq_llm(prompt, max_tokens=300)
 
     try:
         return eval(result)
@@ -76,7 +78,11 @@ def ats_scores(resume, jd):
 # -----------------------------
 def analyze_resume(resume, jd):
     prompt = f"""
-    Provide a detailed ATS analysis comparing resume and job description.
+    Provide a detailed ATS analysis including:
+    - strengths
+    - weaknesses
+    - missing skills
+    - recommendations
 
     Resume:
     {resume}
@@ -84,16 +90,16 @@ def analyze_resume(resume, jd):
     Job Description:
     {jd}
     """
-    return groq_llm(prompt, max_tokens=800)
+    return groq_llm(prompt, max_tokens=1000)
 
 
 # -----------------------------
-# IMPROVED RESUME
+# IMPROVE RESUME
 # -----------------------------
 def improve_resume(resume, jd):
     prompt = f"""
-    Rewrite and improve this resume to match the job description.
-    Make it stronger but truthful.
+    Rewrite and improve the resume to match the job description.
+    Maintain truthfulness.
 
     Resume:
     {resume}
@@ -109,22 +115,21 @@ def improve_resume(resume, jd):
 # -----------------------------
 def chat_about_resume(resume, question):
     prompt = f"""
-    You are an expert resume assistant.
-    Answer the question based only on the resume.
+    You are an AI assistant. Answer based ONLY on this resume.
 
     Resume:
     {resume}
 
     Question: {question}
     """
-    return groq_llm(prompt)
+    return groq_llm(prompt, max_tokens=600)
 
 
 # -----------------------------
 # JOB DESCRIPTION GENERATOR
 # -----------------------------
 def generate_job_description(role):
-    prompt = f"Generate a professional job description for the role: {role}"
+    prompt = f"Generate a professional job description for: {role}"
     return groq_llm(prompt)
 
 
@@ -133,11 +138,8 @@ def generate_job_description(role):
 # -----------------------------
 def recruiter_evaluation(resume):
     prompt = f"""
-    As a recruiter, evaluate this resume. Include:
-
-    - Strengths
-    - Weaknesses
-    - Hiring recommendation
+    Evaluate this resume like an experienced recruiter.
+    Provide strengths, weaknesses & hiring recommendation.
 
     Resume:
     {resume}
