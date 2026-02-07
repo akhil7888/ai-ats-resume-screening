@@ -2,15 +2,15 @@ import streamlit as st
 from groq import Groq
 from docx import Document
 from io import BytesIO
-import fitz  # PyMuPDF for PDF extraction
+import fitz  # PyMuPDF
 
 # -----------------------------
 # INIT GROQ CLIENT
 # -----------------------------
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ✔ FINAL STABLE MODEL (ALWAYS WORKING)
-MODEL = "mixtral-8x7b-32768"
+# ✔ FINAL SAFE MODEL
+MODEL = "gemma2-9b-it"
 
 
 def groq_llm(prompt, max_tokens=800):
@@ -18,10 +18,10 @@ def groq_llm(prompt, max_tokens=800):
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0,
+            temperature=0.1,
             max_tokens=max_tokens
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content.strip()
 
     except Exception as e:
         return f"[Groq API Error] {str(e)}"
@@ -50,9 +50,8 @@ def extract_text(file):
 # -----------------------------
 def ats_scores(resume, jd):
     prompt = f"""
-    Compare the resume with the job description.
-
-    Return ONLY JSON:
+    Compare resume and job description.
+    Return ONLY JSON: 
     {{
         "match": 0-100,
         "fit": 0-100,
@@ -65,7 +64,6 @@ def ats_scores(resume, jd):
     Job Description:
     {jd}
     """
-
     result = groq_llm(prompt)
 
     try:
@@ -79,11 +77,8 @@ def ats_scores(resume, jd):
 # -----------------------------
 def analyze_resume(resume, jd):
     prompt = f"""
-    Provide ATS analysis including:
-    - Strengths
-    - Weaknesses
-    - Missing Skills
-    - Summary
+    Provide ATS analysis including strengths, weaknesses,
+    missing skills, and summary.
 
     Resume:
     {resume}
@@ -95,12 +90,12 @@ def analyze_resume(resume, jd):
 
 
 # -----------------------------
-# IMPROVE RESUME
+# IMPROVED RESUME
 # -----------------------------
 def improve_resume(resume, jd):
     prompt = f"""
-    Improve the resume to match the job description.
-    Keep it truthful and professional.
+    Improve resume to match job description while keeping
+    it truthful, concise, and professional.
 
     Resume:
     {resume}
@@ -116,12 +111,13 @@ def improve_resume(resume, jd):
 # -----------------------------
 def chat_about_resume(resume, question):
     prompt = f"""
-    Answer the user's question using ONLY the resume below.
+    Use ONLY the resume content to answer the question.
 
     Resume:
     {resume}
 
-    Question: {question}
+    Question:
+    {question}
     """
     return groq_llm(prompt, max_tokens=600)
 
@@ -130,7 +126,7 @@ def chat_about_resume(resume, question):
 # JD GENERATOR
 # -----------------------------
 def generate_job_description(role):
-    return groq_llm(f"Generate a job description for: {role}", max_tokens=600)
+    return groq_llm(f"Generate a detailed JD for: {role}", max_tokens=600)
 
 
 # -----------------------------
@@ -138,8 +134,8 @@ def generate_job_description(role):
 # -----------------------------
 def recruiter_evaluation(resume):
     prompt = f"""
-    Evaluate this resume like an HR recruiter.
-    Provide strengths, weaknesses, and recommendation.
+    Evaluate this resume like a recruiter.
+    Provide strengths, weaknesses, and hiring decision.
 
     Resume:
     {resume}
