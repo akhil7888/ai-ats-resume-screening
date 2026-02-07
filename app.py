@@ -45,6 +45,7 @@ if menu == "ATS Scanner":
         if resume_file and jd_text:
             with st.spinner("Analyzing with Groq AI…"):
                 resume_text = extract_text(resume_file)
+                st.session_state.resume_text = resume_text
                 scores = ats_scores(resume_text, jd_text)
                 analysis = analyze_resume(resume_text, jd_text)
                 improved = improve_resume(resume_text, jd_text)
@@ -63,4 +64,9 @@ elif menu == "Recruiter Mode":
     render_recruiter_mode()
 
 elif menu == "Chat with Resume":
-    render_chat_section()
+    if "resume_text" not in st.session_state:
+        st.info("Please analyze a resume in ATS Scanner first.")
+    else:
+        render_chat_section(st.session_state.resume_text)
+
+
