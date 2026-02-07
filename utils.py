@@ -121,7 +121,13 @@ def groq_generate(prompt):
 # Chat with Resume
 def chat_about_resume(resume_text, question):
     prompt = f"""
-    You are an AI resume analyst. Answer the question based ONLY on this resume:
+    You are an expert AI HR assistant.
+
+    Your job:
+    - Understand the resume deeply
+    - Answer the user’s question based ONLY on the resume
+    - Provide structured, clear, professional answers
+    - If information is missing, say "Not mentioned in the resume."
 
     RESUME:
     {resume_text}
@@ -129,10 +135,12 @@ def chat_about_resume(resume_text, question):
     QUESTION:
     {question}
 
-    Provide a clear, structured answer.
+    Provide a clean and readable response.
     """
 
     return groq_generate(prompt)
+
+
 
 
 
