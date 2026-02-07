@@ -10,8 +10,8 @@ import fitz  # PyMuPDF
 # -----------------------------
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# FINAL PERMANENT MODEL
-MODEL = "gemma2-9b-it"
+# FINAL SAFE MODEL (Never decommissioned)
+MODEL = "llama3-70b-versatile"
 
 
 def groq_llm(prompt, max_tokens=800):
@@ -39,7 +39,9 @@ def extract_text(file):
             text += page.get_text()
         return text
 
-    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    elif file.type == (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
         doc = Document(file)
         return "\n".join([p.text for p in doc.paragraphs])
 
@@ -154,14 +156,4 @@ def export_pdf(text):
     return buffer
 
 
-# -----------------------------
-# EXPORT DOCX
-# -----------------------------
-def export_docx(text):
-    buffer = BytesIO()
-    doc = Document()
-    for line in text.split("\n"):
-        doc.add_paragraph(line)
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
+# ----
