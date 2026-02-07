@@ -103,3 +103,33 @@ def export_docx(text):
     buffer = BytesIO()
     doc.save(buffer)
     return buffer.getvalue()
+
+
+
+# Generate text from Groq LLM
+def groq_generate(prompt):
+    response = client.chat.completions.create(
+        model="llama2-70b-4096",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1024,
+    )
+    return response.choices[0].message["content"]
+
+# Chat with Resume
+def chat_about_resume(resume_text, question):
+    prompt = f"""
+    You are an AI resume analyst. Answer the question based ONLY on this resume:
+
+    RESUME:
+    {resume_text}
+
+    QUESTION:
+    {question}
+
+    Provide a clear, structured answer.
+    """
+
+    return groq_generate(prompt)
+
+
+
