@@ -109,11 +109,14 @@ def export_docx(text):
 # Generate text from Groq LLM
 def groq_generate(prompt):
     response = client.chat.completions.create(
-        model="llama2-70b-4096",
+        model="llama3-70b-8192",   # UPDATED MODEL
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1024,
+        temperature=0.4,
     )
     return response.choices[0].message["content"]
+
+
 
 # Chat with Resume
 def chat_about_resume(resume_text, question):
@@ -130,6 +133,7 @@ def chat_about_resume(resume_text, question):
     """
 
     return groq_generate(prompt)
+
 
 
 
