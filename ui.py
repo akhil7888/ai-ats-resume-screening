@@ -65,9 +65,19 @@ def render_recruiter_mode():
 # -----------------------------
 # CHAT SECTION
 # -----------------------------
-def render_chat_section():
+def render_chat_section(resume_text=""):
     st.subheader("💬 Chat with Resume")
-    st.write("Ask anything about the resume:")
-    user_q = st.text_input("Your Question")
-    if user_q:
-        st.success("Chat module coming soon!")
+
+    if not resume_text:
+        st.info("Upload a resume in ATS Scanner first.")
+        return
+
+    question = st.text_input("Ask something about the resume")
+
+    if question:
+        from utils import chat_about_resume
+        answer = chat_about_resume(resume_text, question)
+        st.success(answer)
+
+
+
