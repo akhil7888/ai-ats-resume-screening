@@ -4,12 +4,13 @@ from docx import Document
 from io import BytesIO
 import fitz  # PyMuPDF
 
+
 # -----------------------------
 # INIT GROQ CLIENT
 # -----------------------------
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ✔ FINAL SAFE MODEL
+# FINAL PERMANENT MODEL
 MODEL = "gemma2-9b-it"
 
 
@@ -46,24 +47,24 @@ def extract_text(file):
 
 
 # -----------------------------
-# ATS SCORE GENERATION
+# ATS SCORES
 # -----------------------------
 def ats_scores(resume, jd):
     prompt = f"""
-    Compare resume and job description.
-    Return ONLY JSON: 
+    Compare the resume and job description.
+    Return ONLY JSON:
     {{
         "match": 0-100,
         "fit": 0-100,
         "quality": 0-100
     }}
-
     Resume:
     {resume}
 
     Job Description:
     {jd}
     """
+
     result = groq_llm(prompt)
 
     try:
@@ -77,8 +78,8 @@ def ats_scores(resume, jd):
 # -----------------------------
 def analyze_resume(resume, jd):
     prompt = f"""
-    Provide ATS analysis including strengths, weaknesses,
-    missing skills, and summary.
+    Provide detailed ATS analysis of strengths, weaknesses,
+    missing skills and suggestions.
 
     Resume:
     {resume}
@@ -94,8 +95,8 @@ def analyze_resume(resume, jd):
 # -----------------------------
 def improve_resume(resume, jd):
     prompt = f"""
-    Improve resume to match job description while keeping
-    it truthful, concise, and professional.
+    Improve this resume to match the job description.
+    Keep it truthful, professional and short.
 
     Resume:
     {resume}
@@ -111,7 +112,7 @@ def improve_resume(resume, jd):
 # -----------------------------
 def chat_about_resume(resume, question):
     prompt = f"""
-    Use ONLY the resume content to answer the question.
+    Answer the question ONLY using resume information.
 
     Resume:
     {resume}
@@ -126,7 +127,7 @@ def chat_about_resume(resume, question):
 # JD GENERATOR
 # -----------------------------
 def generate_job_description(role):
-    return groq_llm(f"Generate a detailed JD for: {role}", max_tokens=600)
+    return groq_llm(f"Generate a full professional job description for: {role}", max_tokens=600)
 
 
 # -----------------------------
@@ -135,7 +136,7 @@ def generate_job_description(role):
 def recruiter_evaluation(resume):
     prompt = f"""
     Evaluate this resume like a recruiter.
-    Provide strengths, weaknesses, and hiring decision.
+    Provide strengths, weaknesses and hiring recommendation.
 
     Resume:
     {resume}
