@@ -2,13 +2,16 @@ import streamlit as st
 import fitz  # PyMuPDF
 import docx
 import re
+from docx import Document
+from io import BytesIO
 from groq import Groq
 
+# Initialize Groq Client
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# -------------------------
+# -----------------------------------------------------
 # TEXT EXTRACTION
-# -------------------------
+# -----------------------------------------------------
 def extract_text(file):
     if file.name.endswith(".pdf"):
         pdf = fitz.open(stream=file.read(), filetype="pdf")
@@ -23,9 +26,9 @@ def extract_text(file):
 
     return ""
 
-# -------------------------
-# ATS SCORING (DETERMINISTIC)
-# -------------------------
+# -----------------------------------------------------
+# DETERMINISTIC ATS SCORE (Stable)
+# -----------------------------------------------------
 def deterministic_score(text, jd_text):
     text = text.lower()
     jd_text = jd_text.lower()
@@ -51,23 +54,22 @@ def ats_scores(resume_text, jd_text):
         "quality": min(score + 10, 100)
     }
 
-
-# -------------------------
+# -----------------------------------------------------
 # AI GENERATION (GROQ)
-# -------------------------
+# -----------------------------------------------------
 def groq_generate(prompt):
     response = client.chat.completions.create(
         model="llama3-8b-8192",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=1024
+        max_tokens=1200
     )
     return response.choices[0].message["content"]
 
 
 def analyze_resume(resume, jd):
     prompt = f"""
-You are an ATS Expert. Analyze this resume against the job description.
+You are an ATS expert. Analyze the resume against the job description.
 
 Resume:
 {resume}
@@ -75,14 +77,14 @@ Resume:
 Job Description:
 {jd}
 
-Provide ATS analysis in bullet points.
+Provide a structured ATS analysis.
 """
     return groq_generate(prompt)
 
 
 def improve_resume(resume, jd):
     prompt = f"""
-Rewrite the resume to improve ATS score while keeping content professional.
+Rewrite this resume to improve ATS match. Keep it realistic and professional.
 
 Resume:
 {resume}
@@ -93,9 +95,6 @@ Job Description:
     return groq_generate(prompt)
 
 
-# -------------------------
-# CHAT WITH RESUME
-# -------------------------
 def chat_about_resume(resume_text, question):
     prompt = f"""
 Resume:
@@ -103,32 +102,55 @@ Resume:
 
 Question: {question}
 
-Answer in detail.
+Answer in detail using resume content only.
 """
     return groq_generate(prompt)
 
 
-# -------------------------
-# JD GENERATOR
-# -------------------------
 def generate_job_description(role):
-    prompt = f"Generate a job description for the role '{role}'."
+    prompt = f"Generate a professional job description for the role: {role}"
     return groq_generate(prompt)
 
 
-# -------------------------
-# RECRUITER MODE
-# -------------------------
 def recruiter_evaluation(resume):
     prompt = f"""
-Act as a recruiter. Evaluate this resume:
+You are a recruiter. Evaluate this resume in 4 parts:
 
-{resume}
-
-Give:
 1. Summary
 2. Strengths
 3. Weaknesses
-4. Hire / No-Hire decision
+4. Hire / No-hire decision
+
+Resume:
+{resume}
 """
     return groq_generate(prompt)
+
+
+# -----------------------------------------------------
+# EXPORT PDF
+# -----------------------------------------------------
+def export_pdf(text):
+    buffer = BytesIO()
+    doc = fitz.open()
+
+    page = doc.new_page()
+    page.insert_text((50, 50), text, fontsize=12)
+
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+# -----------------------------------------------------
+# EXPORT DOCX
+# -----------------------------------------------------
+def export_docx(text):
+    doc = Document()
+    for line in text.split("\n"):
+        doc.add_paragraph(line)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
