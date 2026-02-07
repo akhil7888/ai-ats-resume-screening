@@ -1,20 +1,12 @@
 import streamlit as st
 
-# -----------------------------
 # HEADER
-# -----------------------------
 def render_header():
-    st.markdown("""
-        <div class='glass-header'>
-            <h1>📄 AI ATS Resume Screening</h1>
-            <p>Powered by Groq • Fast • Accurate • Free</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>📄 AI ATS Resume Screening</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Powered by Groq • Fast • Accurate • Free</p>", unsafe_allow_html=True)
+    st.write("---")
 
-
-# -----------------------------
 # UPLOAD SECTION
-# -----------------------------
 def render_upload_section():
     st.subheader("📤 Upload Your Resume")
     resume_file = st.file_uploader("Upload resume (PDF / DOCX)", type=["pdf", "docx"])
@@ -24,10 +16,7 @@ def render_upload_section():
 
     return resume_file, jd_text
 
-
-# -----------------------------
 # ATS DASHBOARD
-# -----------------------------
 def render_ats_dashboard(scores, analysis, improved):
     st.subheader("📊 ATS Overview")
 
@@ -42,40 +31,17 @@ def render_ats_dashboard(scores, analysis, improved):
     st.subheader("✨ Improved Resume")
     st.text_area("Improved Resume", improved, height=300)
 
-
-# -----------------------------
 # JD GENERATOR
-# -----------------------------
 def render_jd_generator():
     st.subheader("📝 Job Description Generator")
+    st.info("Enter a role on the left to generate.")
 
-    role = st.text_input("Enter job role")
-
-    if st.button("Generate JD"):
-        st.session_state["generated_jd"] = role
-
-
-# -----------------------------
 # RECRUITER MODE
-# -----------------------------
 def render_recruiter_mode():
     st.subheader("🧑‍💼 Recruiter Mode")
+    st.info("Upload a resume first in ATS Scanner.")
 
-    resume_text = st.session_state.get("resume_text", "")
-
-    if resume_text:
-        st.write("Resume loaded.")
-    else:
-        st.warning("Upload resume in ATS Scanner first!")
-
-    return resume_text
-
-
-# -----------------------------
 # CHAT SECTION
-# -----------------------------
-def render_chat_section(resume_text):
+def render_chat_section():
     st.subheader("💬 Chat with Resume")
-
-    question = st.text_input("Ask something about the resume")
-    return question
+    return st.text_input("Ask something about the resume")
