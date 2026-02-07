@@ -1,147 +1,134 @@
-import pdfplumber
-import docx
-import pandas as pd
-import numpy as np
-from difflib import SequenceMatcher
 import streamlit as st
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from io import BytesIO
-from docx import Document
+import fitz  # PyMuPDF
+import docx
+import re
 from groq import Groq
-from config import GROQ_MODEL
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# Extract resume text
+# -------------------------
+# TEXT EXTRACTION
+# -------------------------
 def extract_text(file):
     if file.name.endswith(".pdf"):
-        with pdfplumber.open(file) as pdf:
-            return "\n".join(page.extract_text() for page in pdf.pages)
-    else:
-        d = docx.Document(file)
-        return "\n".join(p.text for p in d.paragraphs)
+        pdf = fitz.open(stream=file.read(), filetype="pdf")
+        text = ""
+        for page in pdf:
+            text += page.get_text()
+        return text
+
+    elif file.name.endswith(".docx"):
+        doc = docx.Document(file)
+        return "\n".join([p.text for p in doc.paragraphs])
+
+    return ""
+
+# -------------------------
+# ATS SCORING (DETERMINISTIC)
+# -------------------------
+def deterministic_score(text, jd_text):
+    text = text.lower()
+    jd_text = jd_text.lower()
+
+    jd_keywords = re.findall(r"\b[a-zA-Z]+\b", jd_text)
+    resume_words = re.findall(r"\b[a-zA-Z]+\b", text)
+
+    overlap = len(set(jd_keywords) & set(resume_words))
+    total = len(set(jd_keywords))
+
+    if total == 0:
+        return 0
+
+    return int((overlap / total) * 100)
 
 
-# Skill gap detection
-SKILLS = ["python","machine learning","deep learning","nlp","llm","sql","aws","gcp","docker","pytorch"]
-
-def find_skill_gaps(resume, jd):
-    gaps = []
-    for skill in SKILLS:
-        if skill in jd.lower() and skill not in resume.lower():
-            gaps.append(skill)
-    if not gaps:
-        gaps = ["No major skills missing"]
-    return [{"skill": s} for s in gaps]
-
-
-# AI Calls
-def call_groq(prompt):
-    res = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return res.choices[0].message.content
-
-
-def analyze_resume(resume, jd):
-    prompt = f"Analyze this resume vs job description:\nResume:\n{resume}\n\nJD:\n{jd}"
-    return call_groq(prompt)
-
-
-def improve_resume(resume, jd):
-    prompt = f"Rewrite this resume in a clean ATS-friendly version:\n{resume}"
-    return call_groq(prompt)
-
-
-def generate_jd(role):
-    prompt = f"Generate a professional job description for this role: {role}"
-    return call_groq(prompt)
-
-
-def chat_with_resume(resume, query):
-    prompt = f"Resume:\n{resume}\n\nQuestion: {query}"
-    return call_groq(prompt)
-
-
-# ATS Scores
-def ats_scores(resume, jd):
-    match = np.random.randint(55, 95)
-    fit = np.random.randint(50, 90)
-    quality = np.random.randint(40, 85)
-
-    gaps = find_skill_gaps(resume, jd)
+def ats_scores(resume_text, jd_text):
+    score = deterministic_score(resume_text, jd_text)
 
     return {
-        "match": match,
-        "fit": fit,
-        "quality": quality,
-        "skill_gaps": gaps,
+        "match": score,
+        "fit": min(score + 5, 100),
+        "quality": min(score + 10, 100)
     }
 
 
-# Export PDF
-def export_pdf(text):
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=letter)
-    pdf.drawString(40, 750, "Improved Resume")
-    y = 720
-    for line in text.split("\n"):
-        pdf.drawString(40, y, line[:110])
-        y -= 16
-    pdf.save()
-    buffer.seek(0)
-    return buffer.getvalue()
-
-
-# Export DOCX
-def export_docx(text):
-    doc = Document()
-    for line in text.split("\n"):
-        doc.add_paragraph(line)
-    buffer = BytesIO()
-    doc.save(buffer)
-    return buffer.getvalue()
-
-
-
-# Generate text from Groq LLM
+# -------------------------
+# AI GENERATION (GROQ)
+# -------------------------
 def groq_generate(prompt):
     response = client.chat.completions.create(
-        model="llama3-70b-8192",   # UPDATED MODEL
+        model="llama3-8b-8192",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=1024,
-        temperature=0.4,
+        temperature=0.3,
+        max_tokens=1024
     )
     return response.choices[0].message["content"]
 
 
-
-# Chat with Resume
-def chat_about_resume(resume_text, question):
+def analyze_resume(resume, jd):
     prompt = f"""
-    You are an expert AI HR assistant.
+You are an ATS Expert. Analyze this resume against the job description.
 
-    Your job:
-    - Understand the resume deeply
-    - Answer the user’s question based ONLY on the resume
-    - Provide structured, clear, professional answers
-    - If information is missing, say "Not mentioned in the resume."
+Resume:
+{resume}
 
-    RESUME:
-    {resume_text}
+Job Description:
+{jd}
 
-    QUESTION:
-    {question}
-
-    Provide a clean and readable response.
-    """
-
+Provide ATS analysis in bullet points.
+"""
     return groq_generate(prompt)
 
 
+def improve_resume(resume, jd):
+    prompt = f"""
+Rewrite the resume to improve ATS score while keeping content professional.
+
+Resume:
+{resume}
+
+Job Description:
+{jd}
+"""
+    return groq_generate(prompt)
 
 
+# -------------------------
+# CHAT WITH RESUME
+# -------------------------
+def chat_about_resume(resume_text, question):
+    prompt = f"""
+Resume:
+{resume_text}
+
+Question: {question}
+
+Answer in detail.
+"""
+    return groq_generate(prompt)
 
 
+# -------------------------
+# JD GENERATOR
+# -------------------------
+def generate_job_description(role):
+    prompt = f"Generate a job description for the role '{role}'."
+    return groq_generate(prompt)
+
+
+# -------------------------
+# RECRUITER MODE
+# -------------------------
+def recruiter_evaluation(resume):
+    prompt = f"""
+Act as a recruiter. Evaluate this resume:
+
+{resume}
+
+Give:
+1. Summary
+2. Strengths
+3. Weaknesses
+4. Hire / No-Hire decision
+"""
+    return groq_generate(prompt)
