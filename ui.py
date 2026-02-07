@@ -4,9 +4,13 @@ import streamlit as st
 # HEADER
 # -----------------------------
 def render_header():
-    st.markdown("<h1 style='text-align:center;'>📄 AI ATS Resume Screening</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>Powered by Groq • Fast • Accurate • Free</p>", unsafe_allow_html=True)
-    st.write("---")
+    st.markdown("""
+        <div class='glass-header'>
+            <h1>📄 AI ATS Resume Screening</h1>
+            <p>Powered by Groq • Fast • Accurate • Free</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 # -----------------------------
 # UPLOAD SECTION
@@ -19,6 +23,7 @@ def render_upload_section():
     jd_text = st.text_area("Paste the job description here")
 
     return resume_file, jd_text
+
 
 # -----------------------------
 # ATS DASHBOARD
@@ -37,47 +42,40 @@ def render_ats_dashboard(scores, analysis, improved):
     st.subheader("✨ Improved Resume")
     st.text_area("Improved Resume", improved, height=300)
 
-# -----------------------------
-# SKILL GAPS
-# -----------------------------
-def render_skill_gaps(gaps):
-    st.subheader("🧠 Skill Gaps")
-    if not gaps:
-        st.info("No skill gaps found.")
-    else:
-        for g in gaps:
-            st.warning(f"⚠ {g}")
 
 # -----------------------------
 # JD GENERATOR
 # -----------------------------
 def render_jd_generator():
     st.subheader("📝 Job Description Generator")
-    st.write("Coming Soon…")
+
+    role = st.text_input("Enter job role")
+
+    if st.button("Generate JD"):
+        st.session_state["generated_jd"] = role
+
 
 # -----------------------------
 # RECRUITER MODE
 # -----------------------------
 def render_recruiter_mode():
     st.subheader("🧑‍💼 Recruiter Mode")
-    st.write("Coming Soon…")
+
+    resume_text = st.session_state.get("resume_text", "")
+
+    if resume_text:
+        st.write("Resume loaded.")
+    else:
+        st.warning("Upload resume in ATS Scanner first!")
+
+    return resume_text
+
 
 # -----------------------------
 # CHAT SECTION
 # -----------------------------
-def render_chat_section(resume_text=""):
+def render_chat_section(resume_text):
     st.subheader("💬 Chat with Resume")
 
-    if not resume_text:
-        st.info("Upload a resume in ATS Scanner first.")
-        return
-
     question = st.text_input("Ask something about the resume")
-
-    if question:
-        from utils import chat_about_resume
-        answer = chat_about_resume(resume_text, question)
-        st.success(answer)
-
-
-
+    return question
