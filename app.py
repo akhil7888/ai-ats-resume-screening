@@ -21,7 +21,6 @@ from utils import (
     export_pdf,
     export_docx
 )
-
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 st.markdown("<style>" + open("styles.css").read() + "</style>", unsafe_allow_html=True)
 
@@ -93,3 +92,4 @@ elif menu == "Chat with Resume":
             st.write(answer)
         else:
             st.warning("Please analyze a resume in ATS Scanner first!")
+
