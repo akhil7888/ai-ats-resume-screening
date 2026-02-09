@@ -1,77 +1,46 @@
 import streamlit as st
 
-
-# ---------------------------
-# HEADER
-# ---------------------------
 def render_header():
-    st.markdown(
-        "<h1 style='text-align:center;'>📄 AI ATS Resume Screening</h1>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<p style='text-align:center;'>Powered by Groq • Fast • Accurate • Free</p>",
-        unsafe_allow_html=True,
-    )
-    st.write("---")
+    st.markdown("<h1 style='text-align:center;'>AI ATS Resume Screening</h1>", unsafe_allow_html=True)
 
 
-# ---------------------------
-# UPLOAD SECTION
-# ---------------------------
 def render_upload_section():
-    st.subheader("📤 Upload Your Resume")
-    resume_file = st.file_uploader("Upload resume (PDF / DOCX)", type=["pdf", "docx"])
+    st.subheader("📂 Upload Your Resume")
+    uploaded_file = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"])
 
-    st.subheader("📝 Job Description")
-    jd_text = st.text_area("Paste the job description here")
+    st.subheader("📄 Job Description")
+    jd = st.text_area("Paste the Job Description")
 
-    return resume_file, jd_text
+    return uploaded_file, jd
 
 
-# ---------------------------
-# ATS DASHBOARD
-# ---------------------------
 def render_ats_dashboard(scores, analysis, improved):
     st.subheader("📊 ATS Overview")
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("ATS Match", f"{scores['match']}%")
-    c2.metric("Job Fit", f"{scores['fit']}%")
-    c3.metric("Resume Quality", f"{scores['quality']}%")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("ATS Match", f"{scores['ats_match']}%")
+    col2.metric("Job Fit", f"{scores['job_fit']}%")
+    col3.metric("Resume Quality", f"{scores['resume_quality']}%")
 
-    st.subheader("🧠 ATS Analysis")
+    st.subheader("📘 ATS Analysis")
     st.write(analysis)
 
     st.subheader("✨ Improved Resume")
-    st.text_area("Improved Resume", improved, height=300)
+    st.write(improved)
 
 
-# ---------------------------
-# JD GENERATOR
-# ---------------------------
-def render_jd_generator():
-    st.subheader("📝 Job Description Generator")
-    role = st.text_input("Enter Job Role")
-
-    if st.button("Generate JD"):
-        return role
-    return None
+def render_jd_generator_section():
+    role = st.text_input("Enter job role")
+    return role
 
 
-# ---------------------------
-# RECRUITER MODE
-# ---------------------------
-def render_recruiter_mode():
-    st.subheader("🧑‍💼 Recruiter Evaluation Mode")
-    st.write("Click below to evaluate the uploaded resume:")
-    return st.button("Evaluate Resume")
+def render_recruiter_section(resume):
+    st.subheader("Recruiter Review")
+    if resume:
+        return st.button("Evaluate Resume")
+    return False
 
 
-# ---------------------------
-# CHAT SECTION
-# ---------------------------
-def render_chat_section(resume_text):
+def render_chat_section(resume):
     st.subheader("💬 Chat with Resume")
-    st.write("Ask anything about the uploaded resume:")
-    return st.text_input("Your Question")
+    return st.text_input("Ask something about the resume")
