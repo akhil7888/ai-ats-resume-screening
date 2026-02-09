@@ -4,56 +4,56 @@ from ui import (
     render_header,
     render_upload_section,
     render_ats_dashboard,
-    render_jd_generator_section,
-    render_recruiter_section,
     render_chat_section
 )
 from utils import (
-    extract_text,
+    extract_resume_text,
     ats_scores,
     analyze_resume,
     improve_resume,
-    generate_job_description,
-    recruiter_evaluation,
     chat_about_resume
 )
+from recruiter import recruiter_evaluation
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
+st.markdown("<style>" + open("styles.css").read() + "</style>", unsafe_allow_html=True)
 
 render_header()
 
-menu = st.sidebar.radio("Navigation", [
-    "ATS Scanner", "JD Generator", "Recruiter Mode", "Chat with Resume"
-])
+menu = st.sidebar.radio(
+    "Navigation",
+    ["ATS Scanner", "Recruiter Mode", "Chat with Resume"]
+)
 
+# ATS SCANNER
 if menu == "ATS Scanner":
-    resume_file, jd_text = render_upload_section()
+    file, jd = render_upload_section()
 
     if st.button("🔍 Analyze Resume"):
-        if resume_file and jd_text:
-            resume_text = extract_text(resume_file)
-
+        if file and jd:
+            resume_text = extract_resume_text(file)
             st.session_state["resume_text"] = resume_text
 
-            scores = ats_scores(resume_text, jd_text)
-            analysis = analyze_resume(resume_text, jd_text)
-            improved = improve_resume(resume_text, jd_text)
+            scores = ats_scores(resume_text, jd)
+            analysis = analyze_resume(resume_text, jd)
+            improved = improve_resume(resume_text, jd)
 
             render_ats_dashboard(scores, analysis, improved)
 
-elif menu == "JD Generator":
-    role = render_jd_generator_section()
-    if st.button("Generate JD"):
-        jd = generate_job_description(role)
-        st.text_area("Generated JD", jd, height=300)
-
+# RECRUITER MODE
 elif menu == "Recruiter Mode":
     resume = st.session_state.get("resume_text", "")
-    if resume and render_recruiter_section(resume):
+    if resume:
         st.write(recruiter_evaluation(resume))
+    else:
+        st.warning("Upload a resume first in ATS Scanner.")
 
+# CHAT WITH RESUME
 elif menu == "Chat with Resume":
     resume = st.session_state.get("resume_text", "")
-    question = render_chat_section(resume)
-    if question:
-        st.write(chat_about_resume(resume, question))
+    if not resume:
+        st.warning("Upload a resume first.")
+    else:
+        question = render_chat_section(resume)
+        if question:
+            st.write(chat_about_resume(resume, question))
