@@ -1,132 +1,102 @@
 import io
 from groq import Groq
-from pdfminer.high_level import extract_text as pdfminer_extract
+from pdfminer.high_level import extract_text
 from docx import Document
-import json
 import streamlit as st
+import json
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# -------------------------
-# EXTRACT TEXT FROM PDF/DOCX
-# -------------------------
-def extract_text(uploaded_file):
-    if uploaded_file.type == "application/pdf":
-        return pdfminer_extract(uploaded_file)
-
-    elif uploaded_file.type in [
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-    ]:
-        doc = Document(uploaded_file)
-        return "\n".join([para.text for para in doc.paragraphs])
-
+# -----------------------------
+# Extract text from PDF or DOCX
+# -----------------------------
+def extract_resume_text(file):
+    if file.type == "application/pdf":
+        return extract_text(io.BytesIO(file.read()))
     else:
-        return "Unsupported file type"
+        doc = Document(file)
+        return "\n".join(p.text for p in doc.paragraphs)
 
-
-# -------------------------
-# GENERIC GROQ GENERATOR
-# -------------------------
-def groq_generate(prompt, tokens=1024):
+# -----------------------------
+# Generate using Groq
+# -----------------------------
+def groq_generate(prompt, model):
     response = client.chat.completions.create(
-        model="mixtral-8x7b-32768",
+        model=model,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=tokens,
+        max_tokens=1200,
         temperature=0.2
     )
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content
 
-
-# -------------------------
-# ATS MATCH SCORING
-# -------------------------
+# -----------------------------
+# ATS scoring
+# -----------------------------
 def ats_scores(resume_text, jd_text):
     prompt = f"""
-    Compare the following resume and job description and return a JSON with:
-    - ats_match (0-100)
-    - job_fit (0-100)
-    - resume_quality (0-100)
+    Evaluate the resume against the Job Description.
+
+    Return JSON with:
+    - match: %
+    - fit: %
+    - quality: %
 
     Resume:
     {resume_text}
 
-    Job Description:
+    JD:
     {jd_text}
-
-    Return JSON only:
     """
-    result = groq_generate(prompt)
+
+    output = groq_generate(prompt, st.secrets["GROQ_MODEL_ATS"])
     try:
-        return json.loads(result)
+        return json.loads(output)
     except:
-        return {"ats_match": 70, "job_fit": 70, "resume_quality": 70}
+        return {"match": 70, "fit": 70, "quality": 70}
 
-
-# -------------------------
-# ATS ANALYSIS
-# -------------------------
+# -----------------------------
+# Analyze Resume
+# -----------------------------
 def analyze_resume(resume_text, jd_text):
     prompt = f"""
-    Provide a detailed ATS analysis comparing this resume and job description.
-
+    Provide ATS analysis of this resume vs job description.
     Resume:
     {resume_text}
 
-    Job Description:
+    JD:
     {jd_text}
     """
-    return groq_generate(prompt, tokens=2048)
 
+    return groq_generate(prompt, st.secrets["GROQ_MODEL_ATS"])
 
-# -------------------------
-# IMPROVED RESUME
-# -------------------------
+# -----------------------------
+# Improve Resume
+# -----------------------------
 def improve_resume(resume_text, jd_text):
     prompt = f"""
-    Rewrite and improve the following resume to better match the job description,
-    while keeping truth & honesty.
+    Rewrite this resume to better match the job description while keeping truthful.
 
     Resume:
     {resume_text}
 
-    Job Description:
+    JD:
     {jd_text}
     """
-    return groq_generate(prompt, tokens=2048)
 
+    return groq_generate(prompt, st.secrets["GROQ_MODEL_ATS"])
 
-# -------------------------
-# JD GENERATOR
-# -------------------------
-def generate_job_description(role):
-    prompt = f"Generate a professional job description for: {role}"
-    return groq_generate(prompt)
-
-
-# -------------------------
-# RECRUITER MODE
-# -------------------------
-def recruiter_evaluation(resume_text):
+# -----------------------------
+# Chat with Resume
+# -----------------------------
+def chat_about_resume(resume_text, question):
     prompt = f"""
-    Act like a senior recruiter. Evaluate this resume, list strengths,
-    weaknesses, hiring decision, and give hiring recommendation.
+    You are a resume assistant.
+    Answer based ONLY on this resume:
 
     Resume:
     {resume_text}
-    """
-    return groq_generate(prompt)
-
-
-# -------------------------
-# CHAT WITH RESUME
-# -------------------------
-def chat_about_resume(resume_text, question):
-    prompt = f"""
-    You are an expert career assistant. Use ONLY the resume below to answer.
-
-    Resume: {resume_text}
 
     Question: {question}
     """
-    return groq_generate(prompt)
+
+    return groq_generate(prompt, st.secrets["GROQ_MODEL_CHAT"])
